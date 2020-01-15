@@ -28,7 +28,7 @@ func main() {
 		fmt.Println(errors.Wrap(err, "initializing logger"))
 		os.Exit(1)
 	}
-	logger.With(zap.String("ladder", *ladderName))
+	logger = logger.With(zap.String("ladder", *ladderName))
 	logger.Debug("booting up")
 
 	config := enforceConfig{
