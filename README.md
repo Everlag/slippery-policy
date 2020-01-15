@@ -5,6 +5,8 @@ Slippery-policy provides enforcement for the gucci-hobo rules of a Path of Exile
 - No non-unique, non-flask items equipped(past level 2)
 - No private profiles
 
+The league to enforce against can be provided using `-ladder`, ie `slippery-policy.exec -ladder "Hardcore Metamorph"`
+
 This outputs to a CSV file; the default output location `policy_failures.csv`. If that file is already is present, it is appended to rather than overwritten.
 
 Best-effort deduplication of character policy failures past the first is performed. Across restarts of the tool, it may output duplicate entries; this can be cleaned up in post-processing.
