@@ -11,16 +11,16 @@ import (
 )
 
 const (
-	frameTypeNormal     = 0
-	frameTypeMagic      = 1
-	frameTypeRare       = 2
-	frameTypeUnique     = 3
-	frameTypeGem        = 4
-	frameTypeCurrency   = 5
-	frameTypeDivination = 6
-	frameTypeQuestItem  = 7
-	frameTypeProphecy   = 8
-	frameTypeRelic      = 9
+	FrameTypeNormal     = 0
+	FrameTypeMagic      = 1
+	FrameTypeRare       = 2
+	FrameTypeUnique     = 3
+	FrameTypeGem        = 4
+	FrameTypeCurrency   = 5
+	FrameTypeDivination = 6
+	FrameTypeQuestItem  = 7
+	FrameTypeProphecy   = 8
+	FrameTypeRelic      = 9
 
 	inventoryIDFlask = "Flask"
 )
@@ -139,6 +139,37 @@ func (i *ItemResp) FullName() string {
 	return builder.String()
 }
 
+// EnforceGucciHobo ensures all facets of the ItemResp are compliant
+// under the 'Gucci Hobo' policy.
+// TODO: consider having something outside this decorate on the
+// non-item context; or, taking a struct that contains that info
+// rather than bare arguments.
+func (i *ItemResp) EnforceGucciHobo(now time.Time,
+	characterName string, characterLevel int,
+	accountName string) (PolicyFailure, bool) {
+	// Ignore flasks
+	if i.InventoryID == inventoryIDFlask {
+		return PolicyFailure{}, false
+	}
+
+	// Allow uniques or relics, which are fancy uniques
+	if i.FrameType == FrameTypeUnique ||
+		i.FrameType == FrameTypeRelic {
+		return PolicyFailure{}, false
+	}
+
+	return PolicyFailure{
+		Reason:         PolicyFailureReasonItem,
+		AccountName:    accountName,
+		CharacterName:  characterName,
+		CharacterLevel: characterLevel,
+		ItemName:       i.FullName(),
+		ItemLevel:      i.Ilvl,
+		ItemSlot:       i.InventoryID,
+		When:           now,
+	}, true
+}
+
 // ItemRespSet is a slice of ItemResp received from the get-item API
 type ItemRespSet []ItemResp
 
@@ -175,27 +206,12 @@ func (r *GetItemResp) EnforceGucciHobo(now time.Time,
 
 	// Filter for policy exceptions
 	for _, i := range r.Items {
-		// Ignore flasks
-		if i.InventoryID == inventoryIDFlask {
+		fail, failed := i.EnforceGucciHobo(now,
+			r.Character.Name, r.Character.Level, accountName)
+		if !failed {
 			continue
 		}
-
-		// Allow uniques or relics, which are fancy uniques
-		if i.FrameType == frameTypeUnique ||
-			i.FrameType == frameTypeRelic {
-			continue
-		}
-
-		failures = append(failures, PolicyFailure{
-			Reason:         PolicyFailureReasonItem,
-			AccountName:    accountName,
-			CharacterName:  r.Character.Name,
-			CharacterLevel: r.Character.Level,
-			ItemName:       i.FullName(),
-			ItemLevel:      i.Ilvl,
-			ItemSlot:       i.InventoryID,
-			When:           now,
-		})
+		failures = append(failures, fail)
 	}
 
 	return failures

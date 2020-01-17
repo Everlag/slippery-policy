@@ -10,6 +10,7 @@ import (
 
 	"github.com/Everlag/slippery-policy/items"
 	"github.com/Everlag/slippery-policy/ladder"
+	"github.com/Everlag/slippery-policy/passives"
 	"github.com/Everlag/slippery-policy/remote"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -19,6 +20,11 @@ import (
 var ladderPageSize = flag.Int("ladder_page_size", 5, "how many characters to process between ladder refreshes")
 var ladderName = flag.String("ladder", "Slippery Hobo League (PL5357)", "which ladder to use")
 var outputFile = flag.String("o", "policy_failures.csv", "output file")
+
+// Allow disabling specific portions of enforcement. This is primarily
+// aimed at isolating specific components for validation against real servers.
+var doEnforceItems = flag.Bool("items", true, "if character equipment should be enforced")
+var doEnforcePassives = flag.Bool("passives", true, "if character passives should be enforced(this includes socketed jewels)")
 
 func main() {
 	flag.Parse()
@@ -173,36 +179,94 @@ func enforce(logger *zap.Logger,
 			zap.String("character", c.Character.Name),
 		)
 		logger.Debug("checking")
-		buf, err := remote.FetchCharacter(logger,
-			config.CharLimiter, c.Account.Name, c.Character.Name)
-		if err != nil {
-			if errors.Cause(err) == remote.ErrPrivateProfile {
-				failures = append(failures, items.PolicyFailure{
-					Reason:        items.PolicyFailureReasonPrivateProfile,
-					AccountName:   c.Account.Name,
-					CharacterName: c.Character.Name,
-					When:          now,
-				})
+
+		if *doEnforceItems {
+			itemsFailed, err := enforceItems(logger, now, c, config)
+			if err != nil {
+				logger.Info("failed enforcing item constraints",
+					zap.Error(err))
 				continue
 			}
-			logger.Info("failed to find character; may have been deleted",
-				zap.Error(err))
-			continue
+			failures = append(failures, itemsFailed...)
 		}
 
-		resp, err := items.ReadGetItemResp(bytes.NewReader(buf))
-		if err != nil {
-			logger.Info("failed to decode character; api may have changed in a way that breaks compatibility")
-			continue
+		if *doEnforcePassives {
+			passivesFailed, err := enforcePassives(logger, now, c, config)
+			if err != nil {
+				logger.Info("failed enforcing passives constraints",
+					zap.Error(err))
+				continue
+			}
+			failures = append(failures, passivesFailed...)
 		}
-
-		f := resp.EnforceGucciHobo(now, c.Account.Name)
-		if len(f) == 0 {
-			continue
-		}
-		failures = append(failures, f...)
 	}
 
 	// Include ALL characters here, including dead
 	return failures, len(l.Entries), nil
+}
+
+func enforceItems(logger *zap.Logger,
+	now time.Time,
+	c ladder.Entry, config enforceConfig) ([]items.PolicyFailure, error) {
+
+	var failures []items.PolicyFailure
+	buf, err := remote.FetchCharacter(logger,
+		config.CharLimiter, c.Account.Name, c.Character.Name)
+	if err != nil {
+		if errors.Cause(err) == remote.ErrPrivateProfile {
+			// TODO: deduplicate if possible
+			failures = append(failures, items.PolicyFailure{
+				Reason:        items.PolicyFailureReasonPrivateProfile,
+				AccountName:   c.Account.Name,
+				CharacterName: c.Character.Name,
+				When:          now,
+			})
+			return failures, nil
+		}
+		return failures, errors.Wrap(err, "finding character; may have been deleted")
+	}
+
+	resp, err := items.ReadGetItemResp(bytes.NewReader(buf))
+	if err != nil {
+		return failures, errors.Wrap(err, "decoding character; api may have changed in a way that breaks compatibility")
+	}
+
+	f := resp.EnforceGucciHobo(now, c.Account.Name)
+	if len(f) == 0 {
+		return failures, nil
+	}
+	failures = append(failures, f...)
+	return failures, nil
+}
+
+func enforcePassives(logger *zap.Logger, now time.Time,
+	c ladder.Entry, config enforceConfig) ([]items.PolicyFailure, error) {
+
+	var failures []items.PolicyFailure
+	buf, err := remote.FetchPassives(logger, c.Account.Name, c.Character.Name)
+	if err != nil {
+		if errors.Cause(err) == remote.ErrPrivateProfile {
+			failures = append(failures, items.PolicyFailure{
+				Reason:        items.PolicyFailureReasonPrivateProfile,
+				AccountName:   c.Account.Name,
+				CharacterName: c.Character.Name,
+				When:          now,
+			})
+			return failures, nil
+		}
+		return failures, errors.Wrap(err, "finding character; may have been deleted")
+	}
+
+	resp, err := passives.ReadPassives(bytes.NewReader(buf))
+	if err != nil {
+		return failures, errors.Wrap(err, "decoding character; api may have changed in a way that breaks compatibility")
+	}
+
+	f := resp.EnforceGucciHobo(now,
+		c.Account.Name, c.Character.Level, c.Character.Name)
+	if len(f) == 0 {
+		return failures, nil
+	}
+	failures = append(failures, f...)
+	return failures, nil
 }

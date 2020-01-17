@@ -39,14 +39,14 @@ func TestEnforceGucciHobo(t *testing.T) {
 
 	t.Run("happy path unique item", func(t *testing.T) {
 		failures := run(99, ItemResp{
-			FrameType: frameTypeUnique,
+			FrameType: FrameTypeUnique,
 		})
 		require.Empty(t, failures)
 	})
 
 	t.Run("level 2 character allowed with magic item", func(t *testing.T) {
 		failures := run(2, ItemResp{
-			FrameType: frameTypeMagic,
+			FrameType: FrameTypeMagic,
 		})
 		require.Empty(t, failures)
 	})
@@ -57,7 +57,7 @@ func TestEnforceGucciHobo(t *testing.T) {
 		failures := run(99,
 			ItemResp{
 				Name:        badName,
-				FrameType:   frameTypeNormal,
+				FrameType:   FrameTypeNormal,
 				InventoryID: badSlot,
 				Ilvl:        84,
 			},
@@ -84,14 +84,14 @@ func TestEnforceGucciHobo(t *testing.T) {
 
 	t.Run("non-unique non-flask invalid", func(t *testing.T) {
 		failures := run(99, ItemResp{
-			FrameType: frameTypeMagic,
+			FrameType: FrameTypeMagic,
 		})
 		require.NotEmpty(t, failures)
 	})
 
 	t.Run("non-unique flask valid", func(t *testing.T) {
 		failures := run(99, ItemResp{
-			FrameType:   frameTypeMagic,
+			FrameType:   FrameTypeMagic,
 			InventoryID: inventoryIDFlask,
 		})
 		require.Empty(t, failures)
@@ -100,19 +100,19 @@ func TestEnforceGucciHobo(t *testing.T) {
 	t.Run("multiple items succeed when all in policy", func(t *testing.T) {
 		failures := run(99,
 			ItemResp{
-				FrameType:   frameTypeUnique,
+				FrameType:   FrameTypeUnique,
 				InventoryID: "Offhand",
 			},
 			ItemResp{
-				FrameType:   frameTypeUnique,
+				FrameType:   FrameTypeUnique,
 				InventoryID: "Gloves",
 			},
 			ItemResp{
-				FrameType:   frameTypeUnique,
+				FrameType:   FrameTypeUnique,
 				InventoryID: "Ring",
 			},
 			ItemResp{
-				FrameType:   frameTypeNormal,
+				FrameType:   FrameTypeNormal,
 				InventoryID: "Flask",
 			},
 		)
@@ -123,23 +123,23 @@ func TestEnforceGucciHobo(t *testing.T) {
 		badSlot := "Weapon"
 		failures := run(99,
 			ItemResp{
-				FrameType:   frameTypeUnique,
+				FrameType:   FrameTypeUnique,
 				InventoryID: "Offhand",
 			},
 			ItemResp{
-				FrameType:   frameTypeUnique,
+				FrameType:   FrameTypeUnique,
 				InventoryID: "Gloves",
 			},
 			ItemResp{
-				FrameType:   frameTypeUnique,
+				FrameType:   FrameTypeUnique,
 				InventoryID: "Ring",
 			},
 			ItemResp{
-				FrameType:   frameTypeNormal,
+				FrameType:   FrameTypeNormal,
 				InventoryID: "Flask",
 			},
 			ItemResp{
-				FrameType:   frameTypeNormal,
+				FrameType:   FrameTypeNormal,
 				InventoryID: badSlot,
 			},
 		)

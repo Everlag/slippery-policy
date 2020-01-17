@@ -212,6 +212,9 @@ func rateLimitStateValue(state string) (RateLimitState, error) {
 // GetItemsURL is the remote endpoint to fetch character information from
 const GetItemsURL = "https://www.pathofexile.com/character-window/get-items"
 
+// GetPassivesURL is the remote endpoint to fetch passives information from
+const GetPassivesURL = "https://www.pathofexile.com/character-window/get-passive-skills"
+
 // GetLadderURL is the remote endpoint to fetch ladder information
 //
 // Note that the ladder name, ie Slippery%20Hobo%20League%20(PL5357),
@@ -360,6 +363,61 @@ func FetchLadder(logContext *zap.Logger, l *Limiter,
 			return nil, err
 		}
 		return nil, errors.Wrap(err, "failed to run fetch")
+	}
+
+	buf := bytes.NewBuffer(make([]byte, 0, 6*1024))
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read response body")
+	}
+
+	return buf.Bytes(), nil
+}
+
+// FetchPassives resolves the GetPassivesURL for a provided character under a specified account.
+//
+// This returns the contents of the body fetched.
+func FetchPassives(logContext *zap.Logger,
+	accountName, characterName string) ([]byte, error) {
+
+	var resp *http.Response
+	defer func() {
+		if resp != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	req, err := http.NewRequest("GET", GetPassivesURL, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "building request")
+	}
+
+	q := req.URL.Query()
+	q.Add("character", characterName)
+	q.Add("accountName", accountName)
+	req.URL.RawQuery = q.Encode()
+
+	// In theory, passives requests are not rate limited.
+	// If this changes, our logging should catch it... hopefully
+	resp, err = http.DefaultClient.Do(req)
+
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logContext.Error("encountered unexpected rate limiting; backing off",
+				zap.Int("status code", resp.StatusCode),
+				zap.String("status text", resp.Status))
+
+			// This is a minimal delay to ensure we aren't seen as actively
+			// abusive.
+			time.Sleep(time.Second * 1)
+		}
+		// Handle private profiles specifically
+		if resp.StatusCode == http.StatusUnauthorized ||
+			resp.StatusCode == http.StatusForbidden {
+			return nil,
+				errors.Wrap(ErrPrivateProfile, "403 received")
+		}
+		return nil, errors.New("non-200 status code")
 	}
 
 	buf := bytes.NewBuffer(make([]byte, 0, 6*1024))

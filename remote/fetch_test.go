@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github.com/Everlag/slippery-policy/ladder"
+	"github.com/Everlag/slippery-policy/passives"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
 func TestFetchLadder(t *testing.T) {
 	cursor := ladder.PageCursor{
-		Count:  95,
+		Limit:  95,
 		Offset: 10,
 	}
 	ladderName := "Slippery Hobo League (PL5357)"
@@ -32,4 +33,19 @@ func TestFetchLadder(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEmpty(t, parsed.Entries)
+}
+
+func TestFetchPassives(t *testing.T) {
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+
+	characterName := "SleeperSpectreBoi"
+	accountName := "Everlag"
+	result, err := FetchPassives(logger, accountName, characterName)
+	require.NoError(t, err)
+
+	parsed, err := passives.ReadPassives(bytes.NewReader(result))
+	require.NoError(t, err)
+
+	require.NotEmpty(t, parsed.Items)
 }
