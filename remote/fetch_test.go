@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Everlag/slippery-policy/items"
 	"github.com/Everlag/slippery-policy/ladder"
 	"github.com/Everlag/slippery-policy/passives"
 	"github.com/stretchr/testify/require"
@@ -33,6 +34,23 @@ func TestFetchLadder(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NotEmpty(t, parsed.Entries)
+}
+
+func TestFetchCharacter(t *testing.T) {
+	logger, err := zap.NewProduction()
+	require.NoError(t, err)
+
+	characterName := "SleeperSpectreBoi"
+	accountName := "Everlag"
+	l := NewLimiter(time.Millisecond*1500, time.Second*2,
+		5, logger.With(zap.String("limiter", "snapshot")))
+	result, err := FetchCharacter(logger, l, accountName, characterName)
+	require.NoError(t, err)
+
+	parsed, err := items.ReadGetItemResp(bytes.NewReader(result))
+	require.NoError(t, err)
+
+	require.NotEmpty(t, parsed.Items)
 }
 
 func TestFetchPassives(t *testing.T) {

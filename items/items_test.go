@@ -145,6 +145,42 @@ func TestEnforceGucciHobo(t *testing.T) {
 		)
 		require.NotEmpty(t, failures)
 	})
+
+	t.Run("socketed gem valid", func(t *testing.T) {
+		failures := run(99, ItemResp{
+			FrameType: FrameTypeUnique,
+			SocketedItems: []ItemResp{
+				ItemResp{
+					FrameType: FrameTypeGem,
+				},
+			},
+		})
+		require.Empty(t, failures)
+	})
+
+	t.Run("unique socketed jewel valid", func(t *testing.T) {
+		failures := run(99, ItemResp{
+			FrameType: FrameTypeUnique,
+			SocketedItems: []ItemResp{
+				ItemResp{
+					FrameType: FrameTypeUnique,
+				},
+			},
+		})
+		require.Empty(t, failures)
+	})
+
+	t.Run("non-unique socketed jewel invalid", func(t *testing.T) {
+		failures := run(99, ItemResp{
+			FrameType: FrameTypeUnique,
+			SocketedItems: []ItemResp{
+				ItemResp{
+					FrameType: FrameTypeRare,
+				},
+			},
+		})
+		require.NotEmpty(t, failures)
+	})
 }
 
 func TestPolicyFailureCSV(t *testing.T) {

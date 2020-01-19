@@ -120,6 +120,8 @@ type ItemResp struct {
 	//
 	// We care about restricting non-flasks
 	InventoryID string `json:"inventoryId"`
+
+	SocketedItems []ItemResp `json:"socketedItems,omitempty"`
 }
 
 // FullName returns the name derived from name and typeline of an item.
@@ -152,9 +154,21 @@ func (i *ItemResp) EnforceGucciHobo(now time.Time,
 		return PolicyFailure{}, false
 	}
 
+	// Check socketed items first; control flow is a bit easier
+	for _, s := range i.SocketedItems {
+		fail, failed := s.EnforceGucciHobo(now,
+			characterName, characterLevel, accountName)
+		if !failed {
+			continue
+		}
+		return fail, true
+	}
+
 	// Allow uniques or relics, which are fancy uniques
+	// Also allow gems since those are always okay.
 	if i.FrameType == FrameTypeUnique ||
-		i.FrameType == FrameTypeRelic {
+		i.FrameType == FrameTypeRelic ||
+		i.FrameType == FrameTypeGem {
 		return PolicyFailure{}, false
 	}
 
