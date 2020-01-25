@@ -122,6 +122,15 @@ type ItemResp struct {
 	InventoryID string `json:"inventoryId"`
 
 	SocketedItems []ItemResp `json:"socketedItems,omitempty"`
+
+	ImplicitMods []string `json:"implicitMods,omitempty"`
+	EnchantMods  []string `json:"enchantMods,omitempty"`
+	UtilityMods  []string `json:"utilityMods,omitempty"`
+	ExplicitMods []string `json:"explicitMods"`
+	CraftedMods  []string `json:"craftedMods,omitempty"`
+
+	// X is used in pob code output to assign to a flask slot
+	X int32 `json:"x,omitempty"`
 }
 
 // FullName returns the name derived from name and typeline of an item.
