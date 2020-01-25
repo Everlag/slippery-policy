@@ -19,7 +19,7 @@ import (
 
 var ladderPageSize = flag.Int("ladder_page_size", 5, "how many characters to process between ladder refreshes")
 var ladderName = flag.String("ladder", "Slippery Hobo League (PL5357)", "which ladder to use")
-var outputFile = flag.String("o", "policy_failures.csv", "output file")
+var outputFile = flag.String("o", "policy_failures.%s.csv", "output file")
 
 // Allow disabling specific portions of enforcement. This is primarily
 // aimed at isolating specific components for validation against real servers.
@@ -39,7 +39,7 @@ func main() {
 
 	config := enforceConfig{
 		Ladder: *ladderName,
-		LadderLimiter: remote.NewLimiter(time.Millisecond*1500, time.Second*2,
+		LadderLimiter: remote.NewLimiter(time.Millisecond*5000, time.Second*2,
 			5, logger.With(zap.String("limiter", "ladder"))),
 		CharLimiter: remote.NewLimiter(time.Millisecond*1500, time.Second*2,
 			5, logger.With(zap.String("limiter", "character"))),
@@ -65,7 +65,7 @@ func coreLoop(pageSize int,
 	logger *zap.Logger,
 	config enforceConfig) error {
 
-	out := *outputFile
+	out := fmt.Sprintf(*outputFile, *ladderName)
 	output, err := os.OpenFile(out, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return errors.Wrapf(err, "opening output file: %s", out)

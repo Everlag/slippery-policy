@@ -246,7 +246,7 @@ func FetchCharacter(logContext *zap.Logger, l *Limiter,
 			// Specifically instruct the rate limiter to aggressively
 			// backoff when we encounter this scenario.
 			if resp.StatusCode == http.StatusTooManyRequests {
-				l.Backoff(RateLimitState{Current: 1, Max: 1})
+				l.Backoff(RateLimitState{Current: 2, Max: 1})
 			}
 			// Handle private profiles specifically
 			if resp.StatusCode == http.StatusUnauthorized ||
@@ -342,7 +342,7 @@ func FetchLadder(logContext *zap.Logger, l *Limiter,
 			// Specifically instruct the rate limiter to aggressively
 			// backoff when we encounter this scenario.
 			if resp.StatusCode == http.StatusTooManyRequests {
-				l.Backoff(RateLimitState{Current: 1, Max: 1})
+				l.Backoff(RateLimitState{Current: 2, Max: 1})
 			}
 			return RateLimitState{},
 				errors.Errorf("non-200 status code: %d", resp.StatusCode)
