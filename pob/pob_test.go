@@ -24,7 +24,7 @@ func TestNewPathOfBuilding(t *testing.T) {
 	require.NotZero(t, result)
 }
 
-func TestTODOREmove(t *testing.T) {
+func TestItemRespSetToItemsUnion(t *testing.T) {
 	itemBytes := fixtures.FixtureBytes(t, fixtures.GetItemsFixture)
 	var resp items.GetItemResp
 	err := json.Unmarshal([]byte(itemBytes), &resp)
@@ -46,6 +46,17 @@ func TestTODOREmove(t *testing.T) {
 	require.NotEmpty(t, decoded)
 }
 
+func TestGetItemRespToCode(t *testing.T) {
+	itemBytes := fixtures.FixtureBytes(t, fixtures.GetItemsFixture)
+	var resp items.GetItemResp
+	err := json.Unmarshal([]byte(itemBytes), &resp)
+	require.NoError(t, err)
+
+	code, err := GetItemRespToCode(resp)
+	require.NoError(t, err)
+	require.NotEmpty(t, code)
+}
+
 func TestDecodeEncode(t *testing.T) {
 	// Work with a baseline from poeninja
 	result, err := DecodePOBCode(bytes.NewReader([]byte(sampleCode)))
@@ -64,4 +75,21 @@ func TestDecodeEncode(t *testing.T) {
 	// gave as input. However, that doesn't work in this case due to us
 	// needing to hack the XML during encoding which results
 	// in a string-level difference :|
+}
+
+var BlackBoxCode string
+
+func BenchmarkGetItemRespToCode(b *testing.B) {
+	itemBytes := fixtures.FixtureBytes(b, fixtures.GetItemsFixture)
+	var resp items.GetItemResp
+	err := json.Unmarshal([]byte(itemBytes), &resp)
+	require.NoError(b, err)
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		var err error
+		BlackBoxCode, err = GetItemRespToCode(resp)
+		require.NoError(b, err)
+	}
 }
