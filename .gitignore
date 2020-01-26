@@ -3,3 +3,4 @@ todo
 
 /cmd/watch/watch*
 /cmd/watch/slippery-policy*
+/cmd/pob-decode/pob-decode*
