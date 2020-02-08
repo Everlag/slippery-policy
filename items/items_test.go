@@ -199,6 +199,7 @@ func TestPolicyFailureCSV(t *testing.T) {
 			CharacterLevel: 91,
 			AccountName:    "some-account",
 			When:           now,
+			PoB:            "some-long-code",
 		}
 
 		line := failure.ToCSVRecord()
