@@ -50,6 +50,13 @@ type PolicyFailure struct {
 	AccountName string
 
 	When time.Time
+
+	// PoB is a Path of Building code that contains a subset of
+	// the information about the Character.
+	//
+	// This is NOT recorded in the items package. If desired,
+	// This MUST be captured external to this package.
+	PoB string
 }
 
 // ToCSVRecord formats the PolicyFailure to be fine
@@ -64,6 +71,7 @@ func (f *PolicyFailure) ToCSVRecord() []string {
 		strconv.Itoa(f.CharacterLevel),
 		f.AccountName,
 		f.When.Format(time.RFC3339),
+		f.PoB,
 	}
 }
 
@@ -89,6 +97,7 @@ func ParsePolicyFailureCSV(line []string) (PolicyFailure, error) {
 		CharacterLevel: characterLevel, // 5
 		AccountName:    line[6],
 		When:           when,
+		PoB:            line[8],
 	}, nil
 }
 
@@ -106,6 +115,7 @@ func PolicyFailureCSVHeader() []string {
 		"characterLevel",
 		"accountName",
 		"when",
+		"pob",
 	}
 }
 
@@ -122,6 +132,15 @@ type ItemResp struct {
 	InventoryID string `json:"inventoryId"`
 
 	SocketedItems []ItemResp `json:"socketedItems,omitempty"`
+
+	ImplicitMods []string `json:"implicitMods,omitempty"`
+	EnchantMods  []string `json:"enchantMods,omitempty"`
+	UtilityMods  []string `json:"utilityMods,omitempty"`
+	ExplicitMods []string `json:"explicitMods"`
+	CraftedMods  []string `json:"craftedMods,omitempty"`
+
+	// X is used in pob code output to assign to a flask slot
+	X int32 `json:"x,omitempty"`
 }
 
 // FullName returns the name derived from name and typeline of an item.

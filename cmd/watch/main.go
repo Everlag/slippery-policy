@@ -11,6 +11,7 @@ import (
 	"github.com/Everlag/slippery-policy/items"
 	"github.com/Everlag/slippery-policy/ladder"
 	"github.com/Everlag/slippery-policy/passives"
+	"github.com/Everlag/slippery-policy/pob"
 	"github.com/Everlag/slippery-policy/remote"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -235,6 +236,16 @@ func enforceItems(logger *zap.Logger,
 	if len(f) == 0 {
 		return failures, nil
 	}
+	code, err := pob.GetItemRespToCode(*resp)
+	if err != nil {
+		logger.Warn("failed converting GetItemsResp to PoB code, skipping",
+			zap.Error(err))
+	}
+	for i, fail := range f {
+		fail.PoB = code
+		f[i] = fail
+	}
+
 	failures = append(failures, f...)
 	return failures, nil
 }

@@ -16,7 +16,7 @@ const GetPassivesFixture34 = "get-passive-skills.json"
 var box = packr.NewBox(".")
 
 // FixtureBytes returns the bytes from a file relative to the fixtures directory
-func FixtureBytes(t *testing.T, fixture string) []byte {
+func FixtureBytes(t testing.TB, fixture string) []byte {
 	if t != nil {
 		t.Log(fixture)
 	}
